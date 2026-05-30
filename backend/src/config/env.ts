@@ -25,6 +25,7 @@ const envSchema = z.object({
   EMAIL_FROM: z.string().default("noreply@meridian.ai"),
   SLACK_WEBHOOK_URL: z.string().optional(),
   BACKEND_AI_URL: z.string().default("http://localhost:8001"),
+  INTERNAL_API_SECRET: z.string().default("meridian_internal_secret_change_me"),
 })
 
 const parsed = envSchema.safeParse(process.env)
