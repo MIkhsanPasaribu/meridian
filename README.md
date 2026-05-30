@@ -202,7 +202,7 @@ Local development uses Docker. Production runs on managed cloud services with **
 | Service | Local | Production |
 |---------|-------|------------|
 | Frontend | `pnpm dev` | **Vercel** |
-| Backend / Backend AI | local process | **Railway** or **Render** |
+| Backend / Backend AI | local process | **Hugging Face Spaces** (Docker) — or Railway/Render |
 | PostgreSQL | Docker (TimescaleDB) | **Supabase** (pooled connection) |
 | Redis | Docker | **Upstash** (TLS `rediss://`) |
 | Vector DB | Docker (Qdrant) | **Qdrant Cloud** (URL + API key) |
