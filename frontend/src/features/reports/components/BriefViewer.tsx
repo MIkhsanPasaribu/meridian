@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion"
 import { FileText, Download, ExternalLink, Calendar, TrendingUp } from "lucide-react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { formatDate } from "@/lib/utils"
 import { VVSStageIndicator } from "@/features/vvs-score"
 import type { ComplianceReport } from "@/types/global.types"
@@ -106,12 +108,72 @@ export function BriefViewer({ report }: BriefViewerProps) {
       </div>
 
       {/* Report content */}
-      <div className="bg-[#0E1117] border border-[#1E2737] rounded-xl p-6">
+      <div className="bg-[#0E1117] border border-[#1E2737] rounded-xl p-6 md:p-8">
         {briefMarkdown ? (
-          <div className="prose prose-invert max-w-none">
-            <pre className="whitespace-pre-wrap text-sm text-[#E8EDF5] font-sans leading-relaxed">
+          <div className="max-w-none text-sm leading-relaxed text-[#C7D2E0] space-y-3">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                h1: ({ children }) => (
+                  <h1 className="text-2xl font-bold text-[#E8EDF5] mt-2 mb-4 pb-2 border-b border-[#1E2737]">
+                    {children}
+                  </h1>
+                ),
+                h2: ({ children }) => (
+                  <h2 className="text-lg font-semibold text-[#E8EDF5] mt-6 mb-2">{children}</h2>
+                ),
+                h3: ({ children }) => (
+                  <h3 className="text-base font-semibold text-[#E8EDF5] mt-4 mb-2">{children}</h3>
+                ),
+                p: ({ children }) => <p className="text-[#C7D2E0] my-2">{children}</p>,
+                strong: ({ children }) => (
+                  <strong className="font-semibold text-[#E8EDF5]">{children}</strong>
+                ),
+                ul: ({ children }) => (
+                  <ul className="list-disc pl-5 my-2 space-y-1 text-[#C7D2E0]">{children}</ul>
+                ),
+                ol: ({ children }) => (
+                  <ol className="list-decimal pl-5 my-2 space-y-1 text-[#C7D2E0]">{children}</ol>
+                ),
+                li: ({ children }) => <li className="text-[#C7D2E0]">{children}</li>,
+                hr: () => <hr className="my-5 border-[#1E2737]" />,
+                a: ({ href, children }) => (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#3B82F6] hover:underline"
+                  >
+                    {children}
+                  </a>
+                ),
+                blockquote: ({ children }) => (
+                  <blockquote className="border-l-2 border-[#3B82F6]/40 pl-4 italic text-[#8B9BB4] my-3">
+                    {children}
+                  </blockquote>
+                ),
+                code: ({ children }) => (
+                  <code className="px-1.5 py-0.5 rounded bg-[#161B25] text-[#E8EDF5] font-mono text-xs">
+                    {children}
+                  </code>
+                ),
+                table: ({ children }) => (
+                  <div className="overflow-x-auto my-3">
+                    <table className="w-full text-left border-collapse text-xs">{children}</table>
+                  </div>
+                ),
+                th: ({ children }) => (
+                  <th className="border border-[#1E2737] px-3 py-2 bg-[#161B25] text-[#E8EDF5] font-semibold">
+                    {children}
+                  </th>
+                ),
+                td: ({ children }) => (
+                  <td className="border border-[#1E2737] px-3 py-2 text-[#C7D2E0]">{children}</td>
+                ),
+              }}
+            >
               {briefMarkdown}
-            </pre>
+            </ReactMarkdown>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center">
