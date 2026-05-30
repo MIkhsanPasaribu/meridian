@@ -1,0 +1,4 @@
+overrides:
+  postcss: ">=8.5.10"
+  "@eslint/plugin-kit": ">=0.3.4"
+  axios: ">=1.15.2"

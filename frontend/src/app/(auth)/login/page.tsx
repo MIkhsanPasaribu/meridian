@@ -1,0 +1,64 @@
+import { Metadata } from "next"
+import Image from "next/image"
+import Link from "next/link"
+import { LoginForm } from "@/features/authentication"
+import { AuthPageWrapper } from "../_components/AuthPageWrapper"
+
+export const metadata: Metadata = {
+  title: "Sign In — Meridian",
+}
+
+/**
+ * Login page with animated background and branding.
+ */
+export default function LoginPage() {
+  return (
+    <AuthPageWrapper>
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="flex justify-center mb-8">
+          <Image
+            src="/meridian-logo-withtext.png"
+            alt="Meridian"
+            width={180}
+            height={120}
+            className="h-auto w-40 object-contain"
+            priority
+          />
+        </div>
+
+        {/* Card */}
+        <div className="bg-[#0E1117] border border-[#1E2737] rounded-2xl p-8 shadow-2xl">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-[#E8EDF5]">Welcome back</h1>
+            <p className="text-sm text-[#8B9BB4] mt-1">
+              Sign in to your compliance intelligence platform
+            </p>
+          </div>
+
+          <LoginForm />
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-[#8B9BB4]">
+              Don&apos;t have an account?{" "}
+              <Link
+                href="/register"
+                className="text-[#3B82F6] hover:text-[#2563EB] font-medium transition-colors"
+              >
+                Create organization
+              </Link>
+            </p>
+          </div>
+        </div>
+
+        {/* Demo credentials */}
+        <div className="mt-4 p-3 rounded-lg bg-[#3B82F6]/5 border border-[#3B82F6]/20 text-center">
+          <p className="text-xs text-[#8B9BB4]">
+            Demo: <span className="font-mono text-[#3B82F6]">demo@meridian.ai</span> /{" "}
+            <span className="font-mono text-[#3B82F6]">Demo@1234</span>
+          </p>
+        </div>
+      </div>
+    </AuthPageWrapper>
+  )
+}
