@@ -1,0 +1,80 @@
+# =============================================================================
+# Meridian — Local development infrastructure (PostgreSQL, Redis, Qdrant, MinIO)
+#
+# For PRODUCTION / cloud deployment (Vercel + Railway/Render), do NOT use this
+# file. Use managed services instead and set the connection strings in each
+# service's environment (see docs/ENV_SETUP.md Step 9):
+#   - PostgreSQL  → Supabase   (DATABASE_URL)
+#   - Redis       → Upstash    (REDIS_URL, rediss://)
+#   - Vector DB   → Qdrant Cloud (QDRANT_URL + QDRANT_API_KEY)
+#   - Object store→ Supabase Storage / AWS S3 (S3-compatible)
+# =============================================================================
+version: '3.9'
+
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    container_name: meridian_postgres
+    environment:
+      POSTGRES_DB: meridian_db
+      POSTGRES_USER: meridian_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - data_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meridian_user -d meridian_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: meridian_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - data_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: meridian_qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - data_qdrant:/qdrant/storage
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: meridian_minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - data_minio:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  data_postgres:
+  data_redis:
+  data_qdrant:
+  data_minio:
