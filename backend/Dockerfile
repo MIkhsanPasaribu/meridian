@@ -9,7 +9,9 @@ WORKDIR /app
 
 # --- Dependencies ---
 FROM base AS deps
-COPY package.json pnpm-lock.yaml* .npmrc* ./
+# pnpm-workspace.yaml carries the overrides/catalog the lockfile was built from,
+# so it must be present for --frozen-lockfile to validate.
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* .npmrc* ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 # --- Build ---
