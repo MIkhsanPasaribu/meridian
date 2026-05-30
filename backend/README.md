@@ -11,7 +11,7 @@ pinned: false
 # Meridian Backend (Hono API)
 
 Node.js + Hono REST API for the Meridian supply-chain ESG compliance platform.
-Deployed as a Hugging Face **Docker Space** (no credit card required).
+Deployed as a Hugging Face **Docker Space**.
 
 ## How this Space runs
 
