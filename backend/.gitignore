@@ -1,0 +1,20 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Dependencies & build output
+node_modules/
+dist/
+
+# Prisma generated client
+node_modules/.prisma/
+
+# Logs & OS files
+*.log
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
