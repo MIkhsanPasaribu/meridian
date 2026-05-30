@@ -2,6 +2,14 @@
 # Frontend deploys to Vercel separately (see frontend/vercel.json).
 # Managed data services are external: Supabase (Postgres), Upstash (Redis),
 # Qdrant Cloud (vectors). Set their connection strings as env vars below.
+#
+# PLANS: both services are on the FREE plan (no charge).
+#   - Free services have 512 MB RAM and SPIN DOWN after ~15 min idle, so the
+#     first request after idle is slow (cold start ~30-60s). Fine for a demo.
+#   - A card on file is required by Render to use Blueprints, but you are NOT
+#     charged while everything stays on "plan: free".
+#   - The backend-ai image skips local Chromium (Scraping Browser uses Bright
+#     Data's REMOTE browser over CDP), keeping it within the 512 MB limit.
 services:
   # --- Backend (Hono REST API) ---
   - type: web
@@ -9,7 +17,7 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    plan: starter
+    plan: free
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
@@ -51,7 +59,7 @@ services:
     runtime: docker
     dockerfilePath: ./backend-ai/Dockerfile
     dockerContext: ./backend-ai
-    plan: standard
+    plan: free
     healthCheckPath: /health
     envVars:
       - key: ENVIRONMENT
