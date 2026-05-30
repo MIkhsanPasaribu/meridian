@@ -1,0 +1,426 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Direct (non-pooled) connection used for migrations. On Supabase, point this
+  // at the session/direct connection (port 5432) because the transaction pooler
+  // (6543) does not support the advisory locks Prisma Migrate needs.
+  // For local dev, set DIRECT_URL to the same value as DATABASE_URL.
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// ORGANIZATIONS & USERS
+// ============================================================
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  industry    String?
+  size        String?  // "1-50" | "51-200" | "201-1000" | "1000+"
+  country     String?
+  logoUrl     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  memberships Membership[]
+  suppliers   Supplier[]
+  alertRules  AlertRule[]
+  reports     ComplianceReport[]
+  settings    OrganizationSettings?
+
+  @@map("organizations")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  avatarUrl    String?
+  role         Role     @default(ANALYST)
+  isActive     Boolean  @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships  Membership[]
+  alerts       Alert[]
+  auditLogs    AuditLog[]
+  reports      ComplianceReport[]
+
+  @@map("users")
+}
+
+model Membership {
+  id             String       @id @default(cuid())
+  userId         String
+  organizationId String
+  role           Role         @default(ANALYST)
+  joinedAt       DateTime     @default(now())
+
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@map("memberships")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  ANALYST
+  VIEWER
+}
+
+// ============================================================
+// SUPPLIERS
+// ============================================================
+
+model Supplier {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  country        String
+  industry       String
+  websiteUrl     String?
+  description    String?
+  tier           Int      @default(1) // 1 = direct, 2 = tier-2
+  tags           String[] @default([])
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contacts          SupplierContact[]
+  monitoringConfig  MonitoringConfig?
+  monitoringJobs    MonitoringJob[]
+  alerts            Alert[]
+  reports           ComplianceReport[]
+  evidenceItems     EvidenceItem[]
+  vvsReadings       VvsReading[]
+  signalEvents      SignalEvent[]
+
+  @@index([organizationId])
+  @@index([country])
+  @@map("suppliers")
+}
+
+model SupplierContact {
+  id         String  @id @default(cuid())
+  supplierId String
+  name       String
+  email      String?
+  phone      String?
+  role       String?
+
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@map("supplier_contacts")
+}
+
+// ============================================================
+// MONITORING
+// ============================================================
+
+model MonitoringConfig {
+  id                String   @id @default(cuid())
+  supplierId        String   @unique
+  frequency         String   @default("daily") // "hourly" | "daily" | "weekly"
+  targetLanguages   String[] @default(["en"])
+  targetPlatforms   String[] @default([])
+  isActive          Boolean  @default(true)
+  lastRunAt         DateTime?
+  nextRunAt         DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  supplier          Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@map("monitoring_configs")
+}
+
+model MonitoringJob {
+  id          String    @id @default(cuid())
+  supplierId  String
+  jobType     String    // "initial_scan" | "scheduled_scan" | "manual_scan"
+  status      JobStatus @default(QUEUED)
+  priority    Int       @default(1)
+  payload     Json
+  result      Json?
+  errorMsg    String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  supplier    Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([supplierId])
+  @@index([status])
+  @@map("monitoring_jobs")
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+// ============================================================
+// VVS SCORING (Time-Series via TimescaleDB)
+// ============================================================
+
+model VvsReading {
+  id          String   @id @default(cuid())
+  supplierId  String
+  score       Float
+  stage       VvsStage
+  delta       Float    @default(0)
+  signalCount Int      @default(0)
+  jobId       String?
+  recordedAt  DateTime @default(now())
+
+  supplier    Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([supplierId, recordedAt])
+  @@map("vvs_readings")
+}
+
+model SignalEvent {
+  id           String   @id @default(cuid())
+  supplierId   String
+  jobId        String?
+  category     String   // "human_rights" | "environment" | "labor_conditions" | etc.
+  severity     String   // "critical" | "high" | "medium" | "low"
+  sourceType   String   // "government_regulation" | "national_media" | etc.
+  title        String
+  content      String?
+  url          String?
+  language     String   @default("en")
+  platform     String?
+  sentimentScore Float?
+  relevanceScore Float?
+  detectedAt   DateTime @default(now())
+
+  supplier     Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([supplierId, detectedAt])
+  @@map("signal_events")
+}
+
+enum VvsStage {
+  MURMUR
+  RIPPLE
+  WAVE
+  SURGE
+}
+
+// ============================================================
+// ALERTS
+// ============================================================
+
+model Alert {
+  id               String      @id @default(cuid())
+  supplierId       String
+  userId           String?
+  alertType        AlertType
+  severity         AlertSeverity
+  title            String
+  description      String
+  vvsBefore        Float?
+  vvsAfter         Float?
+  triggeringSignals Json?
+  status           AlertStatus @default(UNREAD)
+  acknowledgedAt   DateTime?
+  acknowledgedBy   String?
+  actionNotes      String?
+  createdAt        DateTime    @default(now())
+
+  supplier         Supplier    @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  user             User?       @relation(fields: [userId], references: [id])
+
+  @@index([supplierId])
+  @@index([status])
+  @@map("alerts")
+}
+
+model AlertRule {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  conditions     Json
+  actions        Json
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("alert_rules")
+}
+
+enum AlertType {
+  VVS_SPIKE
+  NEW_STAGE_ENTERED
+  CRITICAL_SIGNAL
+  REGULATION_CHANGE
+  EXECUTIVE_DEPARTURE
+  SCAN_COMPLETED
+  REPORT_READY
+}
+
+enum AlertSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum AlertStatus {
+  UNREAD
+  READ
+  ACKNOWLEDGED
+  DISMISSED
+}
+
+// ============================================================
+// COMPLIANCE REPORTS
+// ============================================================
+
+model ComplianceReport {
+  id             String       @id @default(cuid())
+  supplierId     String
+  organizationId String
+  userId         String
+  reportType     ReportType
+  regulation     String       // "CSDDD" | "UFLPA" | "LkSG" | "BRIEF"
+  title          String
+  content        Json
+  status         ReportStatus @default(DRAFT)
+  vvsScore       Float?
+  vvsStage       VvsStage?
+  gapCount       Int          @default(0)
+  exportUrl      String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  finalizedAt    DateTime?
+
+  supplier       Supplier     @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id])
+  evidenceItems  EvidenceItem[]
+
+  @@index([supplierId])
+  @@map("compliance_reports")
+}
+
+enum ReportType {
+  INTELLIGENCE_BRIEF
+  CSDDD
+  UFLPA
+  LKSG
+}
+
+enum ReportStatus {
+  DRAFT
+  REVIEW
+  FINALIZED
+  EXPORTED
+}
+
+// ============================================================
+// EVIDENCE
+// ============================================================
+
+model EvidenceItem {
+  id           String   @id @default(cuid())
+  supplierId   String
+  reportId     String?
+  jobId        String?
+  evidenceType String   // "screenshot" | "html_snapshot" | "document" | "url_cache"
+  title        String
+  originalUrl  String
+  storageKey   String   // MinIO object key
+  contentHash  String   // SHA-256
+  fileSize     Int?
+  mimeType     String?
+  tags         String[] @default([])
+  regulation   String?
+  capturedAt   DateTime @default(now())
+
+  supplier     Supplier          @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  report       ComplianceReport? @relation(fields: [reportId], references: [id])
+
+  @@index([supplierId])
+  @@map("evidence_items")
+}
+
+// ============================================================
+// REGULATORY FRAMEWORKS
+// ============================================================
+
+model RegulatoryFramework {
+  id             String   @id @default(cuid())
+  code           String   @unique // "CSDDD" | "UFLPA" | "LkSG"
+  name           String
+  jurisdiction   String
+  appliesTo      String
+  reportFormat   String
+  requiredFields Json
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  @@map("regulatory_frameworks")
+}
+
+// ============================================================
+// AUDIT LOG (Immutable, Append-Only)
+// ============================================================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  resource   String
+  resourceId String?
+  payload    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([resource])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ============================================================
+// ORGANIZATION SETTINGS
+// ============================================================
+
+model OrganizationSettings {
+  id                  String   @id @default(cuid())
+  organizationId      String   @unique
+  slackWebhookUrl     String?
+  emailNotifications  Boolean  @default(true)
+  slackNotifications  Boolean  @default(false)
+  dataRetentionDays   Int      @default(365)
+  defaultLanguages    String[] @default(["en"])
+  brightdataApiKey    String?  // encrypted
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("organization_settings")
+}
