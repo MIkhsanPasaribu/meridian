@@ -39,6 +39,17 @@ app.use(
 )
 
 // Health check
+// Root — friendly status (also satisfies platform health probes hitting "/")
+app.get("/", (ctx) =>
+  ctx.json(
+    response.success({
+      service: "meridian-backend",
+      status: "ok",
+      docs: "/health",
+    })
+  )
+)
+
 app.get("/health", (ctx) =>
   ctx.json(
     response.success({ status: "ok", version: "1.0.0", service: "meridian-backend" })

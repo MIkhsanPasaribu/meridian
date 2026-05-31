@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch --env-file=.env src/index.ts",
-    "build": "tsc",
-    "start": "node --env-file=.env dist/index.js",
+    "build": "tsc && tsc-alias",
+    "start": "node dist/src/index.js",
     "db:generate": "prisma generate --schema=database/prisma/schema.prisma",
     "db:migrate": "prisma migrate dev --schema=database/prisma/schema.prisma",
     "db:push": "prisma db push --schema=database/prisma/schema.prisma",
@@ -51,6 +51,7 @@
     "prisma": "^6.5.0",
     "rimraf": "^6.0.0",
     "supertest": "^7.0.0",
+    "tsc-alias": "^1.8.17",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "vite": "6.4.2",

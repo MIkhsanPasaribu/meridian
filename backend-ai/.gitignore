@@ -1,0 +1,30 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Virtual environment (huge, never push)
+.venv/
+venv/
+
+# Python caches & build
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+
+# Test / scratch artifacts
+*.wav
+test_*.wav
+
+# Logs & OS files
+*.log
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

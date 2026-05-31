@@ -59,6 +59,14 @@ app.add_middleware(
 )
 
 
+@app.get("/")
+async def root() -> dict:
+    """Root — friendly status (also satisfies platform probes hitting "/")."""
+    return success_response(
+        {"service": "meridian-backend-ai", "status": "ok", "health": "/health"}
+    )
+
+
 @app.get("/health")
 async def health_check() -> dict:
     """Health check endpoint."""

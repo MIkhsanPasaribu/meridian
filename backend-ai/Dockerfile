@@ -28,5 +28,8 @@ RUN if [ "$INSTALL_CHROMIUM" = "true" ]; then playwright install --with-deps chr
 
 COPY . .
 
+# Hugging Face Spaces routes traffic to the port declared as app_port in
+# README.md and also injects $PORT. Honor it, defaulting to 8001 locally.
+ENV PORT=8001
 EXPOSE 8001
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["sh", "-c", "uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8001}"]
